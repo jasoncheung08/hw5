@@ -5,6 +5,9 @@
 #include <algorithm> 
 #include <map>
 #include <set>
+
+#include <string>
+
 #endif
 
 #include "wordle.h"
@@ -12,48 +15,53 @@
 using namespace std;
 
 
-// Add prototypes of helper functions here
-void generateWords(const string& current, const string& floating, const set<string> dict, set<string>& results, size_t index) {
-  if (index == current.size()) {
-    if (floating.empty() && dict.count(current)) {
+// helper
+int countChar(const string& s, char c) {
+  int count = 0;
+  for(char ch : s) {
+    if(ch == c) count++;
+  }
+  return count;
+}
+
+void helper(string& current, int idx, string floating, const set<string>& dict, set<string>& results) {
+  if (idx == current.size()) {
+    bool valid = true;
+    for(char c : floating) {
+      if(countChar(current, c) < countChar(floating, c)) {
+        valid = false;
+        break;
+      }
+    }
+    if(valid && dict.find(current) != dict.end()) {
       results.insert(current);
     }
     return;
   }
 
-  if (current[index] != '-') {
-    generateWords(current, floating, dict, results, index + 1);
+  if(current[idx] != '-') {
+    helper(current, idx + 1, floating, dict, results);
   }
   else {
-    set<char> tried;
+    for(char c = 'a'; c <= 'z'; ++c) {
+      current[idx] = c;
 
-    for (size_t i = 0; i < floating.size(); ++i)  {
-      char c = floating[i];
-      if (tried.count(c)) continue;
-      tried.insert(c);
-
-      string next = current;
-      next[index] = c;
-      string nextFloating = floating;
-      nextFloating.erase(i, 1);
-
-      generateWords(next, nextFloating, dict, results, index + 1);
-    }
-
-    int blanksLeft = 0;
-    for (size_t i = index + 1; i < current.size(); ++i) {
-      if (current[i] == '-') ++blanksLeft;
-    }
-
-    if (blanksLeft >= (int)floating.size()) {
-      for (char c = 'a'; c <= 'z'; ++c) {
-        if (tried.count(c)) continue;
-
-        string next = current;
-        next[index] = c;
-        generateWords(next, floating, dict, results, index + 1);
+      int pos = -1;
+      for(size_t i = 0; i < floating.size(); ++i) {
+        if(floating[i] == c) {
+          pos = i;
+          break;
+        }
       }
+
+      string newFloating = floating;
+      if(pos != -1) {
+        newFloating.erase(pos, 1);
+      }
+
+      helper(current, idx + 1, newFloating, dict, results);
     }
+    current[idx] = '-';
   }
 }
 
@@ -64,9 +72,8 @@ std::set<std::string> wordle(
     const std::set<std::string>& dict)
 {
     // Add your code here
-
-    std::set<std::string> results;
-    
-    generateWords(in, floating, dict, results, 0);
+    set<string> results;
+    string current = in;
+    helper(current, 0, floating, dict, results);
     return results;
 }
