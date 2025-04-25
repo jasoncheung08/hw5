@@ -15,7 +15,7 @@ using namespace std;
 // Add prototypes of helper functions here
 void generateWords(const string& current, const string& floating, const set<string> dict, set<string>& results, size_t index) {
   if (index == current.size()) {
-    if (floating.empty() && dict.find(current) != dict.end()) {
+    if (floating.empty() && dict.count(current)) {
       results.insert(current);
     }
     return;
@@ -25,26 +25,33 @@ void generateWords(const string& current, const string& floating, const set<stri
     generateWords(current, floating, dict, results, index + 1);
   }
   else {
-    set<char> used;
-    for (char c = 'a'; c <= 'z'; ++c) {
-      if (used.count(c)) continue;
-      used.insert(c);
+    set<char> tried;
+
+    for (size_t i = 0; i < floating.size(); ++i)  {
+      char c = floating[i];
+      if (tried.count(c)) continue;
+      tried.insert(c);
 
       string next = current;
       next[index] = c;
-
       string nextFloating = floating;
-      size_t pos = nextFloating.find(c);
-      if (pos != string::npos) {
-        nextFloating.erase(pos, 1);
-      }
+      nextFloating.erase(i, 1);
 
-      int remainingBlanks = 0;
-      for (size_t i = index + 1; i < current.size(); ++i) {
-        if (current[i] == '-') ++remainingBlanks;
-      }
-      if (pos != string::npos || remainingBlanks >= int(nextFloating.size())) {
-        generateWords(next, nextFloating, dict, results, index + 1);
+      generateWords(next, nextFloating, dict, results, index + 1);
+    }
+
+    int blanksLeft = 0;
+    for (size_t i = index + 1; i < current.size(); ++i) {
+      if (current[i] == '-') ++blanksLeft;
+    }
+
+    if (blanksLeft >= (int)floating.size()) {
+      for (char c = 'a'; c <= 'z'; ++c) {
+        if (tried.count(c)) continue;
+
+        string next = current;
+        next[index] = c;
+        generateWords(next, floating, dict, results, index + 1);
       }
     }
   }
